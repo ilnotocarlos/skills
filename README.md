@@ -18,8 +18,9 @@ To install just one: `npx skills add ilnotocarlos/skills -g --skill diagnosi-mcp
 | [diagnosi-mcp](skills/diagnosi-mcp) | "too many MCP servers, clean them up" | real usage of each server per project, duplicates, per-project rules |
 | [diagnosi-sessioni](skills/diagnosi-sessioni) | "optimize how I use Claude Code" | sessions that run too long, generic subagents, wasted model spend |
 | [diagnosi-contesto](skills/diagnosi-contesto) | "you read too many files, fix the project wiki" | how much gets read and re-read, project index and status brought back up to date |
+| [smista-richieste](skills/smista-richieste) | "here are fifteen requests, organize them" | an inventory, an order, and for each request only the checks it really triggers |
 
-All four follow the same rule: **measure first, then propose, and change nothing without your yes.** The scripts only read local files (`~/.claude`) and make no network requests. You need Python 3 and Node; there are no dependencies to install.
+All of them follow the same rule: **measure first, then propose, and change nothing without your yes.** The scripts only read local files (`~/.claude`) and make no network requests. You need Python 3 and Node; there are no dependencies to install.
 
 > **Language.** The skill instructions and the script output are in Italian. The example output below is shown as the scripts print it; there is a [glossary](#glossary) at the end.
 
@@ -133,6 +134,23 @@ Columns: file reads, reads per session, share that are re-reads of the same file
 Here: the index points to 4 things that do not exist, 31 notes changed after the index was last updated and are not listed in it, and 11 notes are over 400 lines.
 
 The skill measures, then brings the three files back up to date in the right order (index, status, rules) without deleting or moving any note, and proposes six reading rules, such as: search before reading, do not re-read, read only the range you need from long files.
+
+## smista-richieste
+
+*Triage requests.* On a large project, a batch of requests fails in a predictable way: you start from the first one and read code, the context is full halfway down the list, and checks are applied from memory, some to everything and some forgotten.
+
+The skill works in four steps and reads code only from the third:
+
+| Step | What happens |
+|---|---|
+| Inventory | one row per request: what, type, where, size, what is unknown. No code opened yet |
+| Order | duplicates and contradictions flagged first; requests on the same files in sequence, independent ones in parallel |
+| Checks | for each request, only the rows of the project's check matrix that are triggered **by what it touches** |
+| Report | one row per request: outcome, checks passed, checks skipped or failed and why |
+
+Checks are split into three families, handled differently: **mechanical** (one command, once per branch, at the end), **judgment** (a specific list of questions, handed to a review subagent together with the diff), and **the user's** (production, product choices, messages to the client: prepared, then stop).
+
+The matrix lives in the project as `CONTROLLI.md`; a template ships with the skill. It is the one place where checks accumulate, so the project rules can stay short.
 
 ---
 

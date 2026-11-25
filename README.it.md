@@ -18,6 +18,7 @@ Per installarne una sola: `npx skills add ilnotocarlos/skills -g --skill diagnos
 | [diagnosi-mcp](skills/diagnosi-mcp) | "troppi MCP, fai pulizia" | uso reale di ogni server per progetto, doppioni, regole per progetto |
 | [diagnosi-sessioni](skills/diagnosi-sessioni) | "ottimizza il mio uso di Claude Code" | sessioni troppo lunghe, agenti generici, modelli sprecati |
 | [diagnosi-contesto](skills/diagnosi-contesto) | "leggi troppi file, sistema il wiki del progetto" | quanto si legge e si rilegge, indice e stato del progetto rimessi in pari |
+| [smista-richieste](skills/smista-richieste) | "ecco quindici richieste, organizzale" | un inventario, un ordine, e per ogni richiesta solo i controlli che fa scattare davvero |
 
 Tutte seguono la stessa regola: **prima misurano, poi propongono, e non cambiano nulla senza il tuo sì.** Gli script leggono solo file locali (`~/.claude`) e non fanno richieste di rete. Servono Python 3 e Node; nessuna dipendenza da installare.
 
@@ -123,6 +124,23 @@ esperimenti/gamma                           3      50    16      0%       0%    
 ```
 
 La skill misura, poi rimette in pari i tre file nell'ordine giusto (indice, stato, regole) senza cancellare né spostare note, e propone sei regole di lettura: cercare prima di leggere, non rileggere, leggere solo l'intervallo che serve dei file lunghi.
+
+## smista-richieste
+
+Su un progetto grande, un blocco di richieste va storto in modo prevedibile: si parte dalla prima e si legge codice, a metà elenco il contesto è pieno, e i controlli si applicano a memoria, alcuni a tutto e altri dimenticati.
+
+La skill ragiona in quattro tempi e legge codice solo dal terzo:
+
+| Tempo | Cosa succede |
+|---|---|
+| Inventario | una riga per richiesta: cosa, tipo, dove, dimensione, cosa non si sa. Ancora nessun file aperto |
+| Ordine | doppioni e contraddizioni segnalati subito; richieste sugli stessi file in fila, quelle indipendenti in parallelo |
+| Controlli | per ogni richiesta, solo le righe della matrice del progetto che scattano **in base a ciò che tocca** |
+| Resoconto | una riga per richiesta: esito, controlli passati, saltati o falliti e perché |
+
+I controlli sono divisi in tre famiglie, trattate in modo diverso: **meccanici** (un comando, una volta per ramo, alla fine), **di giudizio** (un elenco puntuale di domande, dato a un agente di revisione insieme al diff) e **dell'utente** (produzione, scelte di prodotto, comunicazioni al cliente: si prepara e ci si ferma).
+
+La matrice vive nel progetto come `CONTROLLI.md`; la skill ne porta un modello. È l'unico posto dove i controlli si accumulano, così le regole del progetto restano brevi.
 
 ---
 
