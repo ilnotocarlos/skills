@@ -1,29 +1,33 @@
-# Skills per Claude Code
+# Skills for Claude Code
 
-Skill per tenere in ordine Claude Code stesso: cosa è installato, cosa viene caricato a ogni sessione, come vengono usate le sessioni.
+**English** · [Italiano](README.it.md)
 
-Sono nate da un'ottimizzazione reale. Su un computer con 260 sessioni di lavoro la diagnosi ha trovato 79 server MCP caricati a ogni avvio (ne servivano tra 2 e 8 a seconda del progetto), skill installate e mai aperte, e 491 agenti lanciati di cui il 95% sul modello più costoso. Ogni skill qui contiene lo script che ha prodotto quei numeri e le correzioni che hanno funzionato.
+Skills that keep Claude Code itself in order: what is installed, what gets loaded into every session, and how sessions are actually used.
+
+They came out of a real clean-up. On one machine with 260 work sessions, the diagnosis found 79 MCP servers loaded at every start (each project needed between 2 and 8), skills that were installed and never opened, and 491 subagents launched, 95% of them on the most expensive model. Each skill here ships the script that produced those numbers and the fixes that worked.
 
 ```bash
 npx skills add ilnotocarlos/skills -g
 ```
 
-Per installarne una sola: `npx skills add ilnotocarlos/skills -g --skill diagnosi-mcp`
+To install just one: `npx skills add ilnotocarlos/skills -g --skill diagnosi-mcp`
 
-| Skill | Chiedi a Claude | Ottieni |
+| Skill | Ask Claude | You get |
 |---|---|---|
-| [gestisci-skills](skills/gestisci-skills) | "fai pulizia delle skill" | quali skill usi davvero, aggiornamento, rimozione di quelle ferme |
-| [diagnosi-mcp](skills/diagnosi-mcp) | "troppi MCP, fai pulizia" | uso reale di ogni server per progetto, doppioni, regole per progetto |
-| [diagnosi-sessioni](skills/diagnosi-sessioni) | "ottimizza il mio uso di Claude Code" | sessioni troppo lunghe, agenti generici, modelli sprecati |
-| [diagnosi-contesto](skills/diagnosi-contesto) | "leggi troppi file, sistema il wiki del progetto" | quanto si legge e si rilegge, indice e stato del progetto rimessi in pari |
+| [gestisci-skills](skills/gestisci-skills) | "clean up my skills" | which skills you really use, updates, removal of the idle ones |
+| [diagnosi-mcp](skills/diagnosi-mcp) | "too many MCP servers, clean them up" | real usage of each server per project, duplicates, per-project rules |
+| [diagnosi-sessioni](skills/diagnosi-sessioni) | "optimize how I use Claude Code" | sessions that run too long, generic subagents, wasted model spend |
+| [diagnosi-contesto](skills/diagnosi-contesto) | "you read too many files, fix the project wiki" | how much gets read and re-read, project index and status brought back up to date |
 
-Tutte seguono la stessa regola: **prima misurano, poi propongono, e non cambiano nulla senza il tuo sì.** Gli script leggono solo file locali (`~/.claude`) e non fanno richieste di rete. Servono Python 3 e Node; nessuna dipendenza da installare.
+All four follow the same rule: **measure first, then propose, and change nothing without your yes.** The scripts only read local files (`~/.claude`) and make no network requests. You need Python 3 and Node; there are no dependencies to install.
+
+> **Language.** The skill instructions and the script output are in Italian. The example output below is shown as the scripts print it; there is a [glossary](#glossary) at the end.
 
 ---
 
 ## gestisci-skills
 
-Installare una skill costa dieci secondi, quindi se ne accumulano. Ognuna aggiunge la propria descrizione a ogni sessione, e dopo qualche mese non sai più quali ti servono.
+*Manage skills.* Installing a skill takes ten seconds, so they pile up. Each one adds its description to every session, and after a few months you no longer know which ones you need.
 
 ```
 SKILL                            TIPO       USI  ULTIMO USO  INSTALLATA  ESITO
@@ -40,18 +44,18 @@ Skill dei plugin (si tolgono disattivando il plugin):
 Candidate alla rimozione (soglia 30 giorni): gsap-core, home-assistant-best-practices
 ```
 
-| Chiedi | Succede |
+| You ask | What happens |
 |---|---|
-| "c'è una skill per i changelog?" | cerca nel catalogo aperto, propone al massimo tre candidate con installazioni e autore |
-| "installa quella" | legge prima il suo `SKILL.md` e segnala se esegue comandi o invia dati, poi installa |
-| "aggiorna le skill" | aggiorna quelle che hanno una fonte e dice quali non possono essere aggiornate |
-| "togli quelle che non servono" | propone solo `mai usata` e `ferma`, chiede conferma, rimuove nel modo giusto per ogni tipo |
+| "is there a skill for changelogs?" | searches the open catalog and proposes at most three candidates, with install counts and author |
+| "install that one" | reads its `SKILL.md` first and flags anything that runs commands or sends data, then installs |
+| "update my skills" | updates the ones that have a source and tells you which cannot be updated |
+| "remove the ones I don't need" | proposes only `mai usata` (never used) and `ferma` (idle), asks for confirmation, removes each the right way for its type |
 
-Una skill appena installata risulta `nuova` e non viene proposta per la rimozione. Le skill copiate a mano finiscono nel Cestino, quindi restano recuperabili.
+A freshly installed skill is marked `nuova` (new) and is not proposed for removal. Skills copied in by hand go to the Trash, so they stay recoverable.
 
 ## diagnosi-mcp
 
-Connettori dell'account, plugin e file di progetto dichiarano server MCP ognuno per conto suo. Il risultato tipico: decine di server caricati ovunque, molti mai autenticati, alcuni doppi.
+*MCP diagnosis.* Account connectors, plugins and project files each declare MCP servers on their own. The usual result: dozens of servers loaded everywhere, many never authenticated, some duplicated.
 
 ```
 262 sessioni in 42 progetti
@@ -67,16 +71,18 @@ PER PROGETTO (server usati almeno una volta)
   casa/amministrazione: claude_ai_Qonto=53, claude_ai_Gmail=7
 ```
 
-Da qui la skill classifica ogni server (mai usato, doppione, usato in pochi progetti, usato ovunque), propone le regole e le scrive nei file di impostazioni, poi verifica con `claude mcp list` cartella per cartella.
+From there the skill classifies each server (never used, duplicate, used in a few projects, used everywhere), proposes the rules, writes them into the settings files, and verifies with `claude mcp list` folder by folder.
 
-Contiene anche quattro comportamenti di Claude Code scoperti provando, che fanno perdere tempo a chi non li conosce:
+It also records four Claude Code behaviors found by testing, which cost time if you don't know them:
 
-- i connettori dell'account non si possono spegnere ovunque e riaccendere in un progetto, solo il contrario;
-- le impostazioni di progetto non si ereditano dalle cartelle madri;
-- due fonti dello stesso servizio si nascondono a vicenda: ne spegni una e compare l'altra;
-- le variabili d'ambiente delle impostazioni arrivano anche alla shell della sessione aperta e falsano le prove.
+- account connectors cannot be turned off everywhere and back on in one project, only the other way round;
+- project settings are not inherited from parent folders;
+- two sources of the same service hide each other: turn one off and the other appears;
+- environment variables set in the settings also reach the shell of the open session and skew your tests.
 
 ## diagnosi-sessioni
+
+*Session diagnosis.*
 
 ```
 262 sessioni, 3.2 GB di trascrizioni
@@ -95,11 +101,13 @@ SEGNALI
   - quasi nessun agente cambia modello: letture e ricerche girano sul modello più costoso
 ```
 
-Per ogni segnale la skill propone la correzione: chiudere le sessioni prima salvando lo stato in un file, definire quattro agenti specializzati (lettura, ricerca, esecuzione, revisione) ognuno con il modello minimo che basta, e la regola per farli scegliere.
+The three signals above read: more compactions than sessions (sessions run too long); almost all subagents are generic; almost no subagent switches model, so reading and searching run on the most expensive one.
+
+For each signal the skill proposes the fix: close sessions earlier by saving the state to a file, define four specialized subagents (reading, research, execution, review) each on the cheapest model that is enough, and add the rule that makes Claude pick them.
 
 ## diagnosi-contesto
 
-Un progetto si dovrebbe aprire leggendo tre file brevi (regole, stato, indice), non esplorando le cartelle. Funziona finché quei file sono aggiornati: quando l'indice punta a cose che non esistono più, Claude smette di fidarsi e torna a leggere tutto.
+*Context diagnosis.* A project should open by reading three short files (rules, status, index), not by exploring folders. That works as long as those files are current: once the index points to things that no longer exist, Claude stops trusting it and goes back to reading everything.
 
 ```
 PROGETTO                                 SESS LETTURE /SESS RILETTE CONTESTO SOLO LETTI
@@ -107,6 +115,8 @@ clienti/alfa                               29     218     7     47%      10%    
 clienti/beta                               13      53     4     43%      26%        73%
 esperimenti/gamma                           3      50    16      0%       0%        98%
 ```
+
+Columns: file reads, reads per session, share that are re-reads of the same file in one session, share that are context files, share of files read but never edited.
 
 ```
 == clienti/alfa
@@ -120,28 +130,44 @@ esperimenti/gamma                           3      50    16      0%       0%    
     - 11 note oltre 400 righe (costose da leggere per intero)
 ```
 
-La skill misura, poi rimette in pari i tre file nell'ordine giusto (indice, stato, regole) senza cancellare né spostare note, e propone sei regole di lettura: cercare prima di leggere, non rileggere, leggere solo l'intervallo che serve dei file lunghi.
+Here: the index points to 4 things that do not exist, 31 notes changed after the index was last updated and are not listed in it, and 11 notes are over 400 lines.
+
+The skill measures, then brings the three files back up to date in the right order (index, status, rules) without deleting or moving any note, and proposes six reading rules, such as: search before reading, do not re-read, read only the range you need from long files.
 
 ---
 
-## Usare solo gli script
+## Using the scripts on their own
 
 ```bash
 python3 ~/.claude/skills/gestisci-skills/uso.py --giorni 60
 python3 ~/.claude/skills/diagnosi-mcp/uso_mcp.py
 python3 ~/.claude/skills/diagnosi-sessioni/sessioni.py --mb 30
 python3 ~/.claude/skills/diagnosi-contesto/letture.py --progetto alfa
-python3 ~/.claude/skills/diagnosi-contesto/wiki.py ~/progetti/alfa
+python3 ~/.claude/skills/diagnosi-contesto/wiki.py ~/projects/alfa
 ```
 
-Tutti tranne `wiki.py` accettano `--json`.
+All except `wiki.py` accept `--json`. `--giorni` is the threshold in days, `--progetto` filters by project name.
 
-## Limiti
+## Limits
 
-- I conteggi vedono solo le sessioni ancora presenti sul computer: non quelle cancellate o fatte altrove.
-- "Ultimo uso" e peso in MB sono indicatori, non misure al minuto o al token.
-- I nomi dei progetti negli esempi sono inventati.
+- The counts only see sessions still on the machine: not deleted ones, and not ones run elsewhere.
+- "Last used" and size in MB are indicators, not per-minute or per-token measurements.
+- Project names in the examples are made up.
 
-## Licenza
+## Glossary
+
+| Italian | English |
+|---|---|
+| usi, chiamate, letture | uses, calls, reads |
+| ultimo uso, installata, `Ng fa` | last used, installed, N days ago |
+| tipo: `gestita` / `cartella` | type: managed by `npx skills` / plain folder |
+| esito: `in uso`, `ferma`, `mai usata`, `nuova` | verdict: in use, idle, never used, new |
+| progetti, sessioni, compattazioni, lunghe | projects, sessions, compactions, long |
+| agenti, generici, `(eredita)` | subagents, generic, inherits the main model |
+| rilette, contesto, solo letti | re-read, context files, read only |
+| regole, stato, indice, note | rules, status, index, notes |
+| segnali | signals |
+
+## License
 
 MIT
