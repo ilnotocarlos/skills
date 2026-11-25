@@ -35,12 +35,16 @@ def uso():
 def installate():
     """[(nome, tipo, timestamp installazione)] delle skill personali."""
     base = os.path.join(CLAUDE, "skills")
+    try:  # registro di `npx skills`: una skill gestita può essere una copia, non solo un link
+        gestite = set(json.load(open(os.path.expanduser("~/.agents/.skill-lock.json")))["skills"])
+    except (OSError, ValueError, KeyError):
+        gestite = set()
     out = []
     for nome in sorted(os.listdir(base)) if os.path.isdir(base) else []:
         p = os.path.join(base, nome)
         if not os.path.isfile(os.path.join(p, "SKILL.md")):
             continue  # cartelle di servizio, link rotti
-        tipo = "gestita" if os.path.islink(p) else "cartella"
+        tipo = "gestita" if os.path.islink(p) or nome in gestite else "cartella"
         out.append((nome, tipo, os.lstat(p).st_mtime))
     return out
 
