@@ -15,8 +15,9 @@ Per installarne una sola: `npx skills add ilnotocarlos/skills -g --skill diagnos
 | [gestisci-skills](skills/gestisci-skills) | "fai pulizia delle skill" | quali skill usi davvero, aggiornamento, rimozione di quelle ferme |
 | [diagnosi-mcp](skills/diagnosi-mcp) | "troppi MCP, fai pulizia" | uso reale di ogni server per progetto, doppioni, regole per progetto |
 | [diagnosi-sessioni](skills/diagnosi-sessioni) | "ottimizza il mio uso di Claude Code" | sessioni troppo lunghe, agenti generici, modelli sprecati |
+| [diagnosi-contesto](skills/diagnosi-contesto) | "leggi troppi file, sistema il wiki del progetto" | quanto si legge e si rilegge, indice e stato del progetto rimessi in pari |
 
-Tutte e tre seguono la stessa regola: **prima misurano, poi propongono, e non cambiano nulla senza il tuo sì.** Gli script leggono solo file locali (`~/.claude`) e non fanno richieste di rete. Servono Python 3 e Node; nessuna dipendenza da installare.
+Tutte seguono la stessa regola: **prima misurano, poi propongono, e non cambiano nulla senza il tuo sì.** Gli script leggono solo file locali (`~/.claude`) e non fanno richieste di rete. Servono Python 3 e Node; nessuna dipendenza da installare.
 
 ---
 
@@ -96,6 +97,31 @@ SEGNALI
 
 Per ogni segnale la skill propone la correzione: chiudere le sessioni prima salvando lo stato in un file, definire quattro agenti specializzati (lettura, ricerca, esecuzione, revisione) ognuno con il modello minimo che basta, e la regola per farli scegliere.
 
+## diagnosi-contesto
+
+Un progetto si dovrebbe aprire leggendo tre file brevi (regole, stato, indice), non esplorando le cartelle. Funziona finché quei file sono aggiornati: quando l'indice punta a cose che non esistono più, Claude smette di fidarsi e torna a leggere tutto.
+
+```
+PROGETTO                                 SESS LETTURE /SESS RILETTE CONTESTO SOLO LETTI
+clienti/alfa                               29     218     7     47%      10%        70%
+clienti/beta                               13      53     4     43%      26%        73%
+esperimenti/gamma                           3      50    16      0%       0%        98%
+```
+
+```
+== clienti/alfa
+   note: 501   ferme da oltre 30g: 139
+   regole  CLAUDE.md  (54 righe, aggiornato 13g fa)
+   stato   STATO.md  (45 righe, aggiornato 0g fa)
+   indice  Alfa — Indice.md  (85 righe, aggiornato 29g fa)
+   SEGNALI:
+    - l'indice punta a 4 cose che non esistono: app/, prototipo/, documentazione/
+    - 31 note create o cambiate dopo l'ultimo aggiornamento dell'indice e non citate lì
+    - 11 note oltre 400 righe (costose da leggere per intero)
+```
+
+La skill misura, poi rimette in pari i tre file nell'ordine giusto (indice, stato, regole) senza cancellare né spostare note, e propone sei regole di lettura: cercare prima di leggere, non rileggere, leggere solo l'intervallo che serve dei file lunghi.
+
 ---
 
 ## Usare solo gli script
@@ -104,9 +130,11 @@ Per ogni segnale la skill propone la correzione: chiudere le sessioni prima salv
 python3 ~/.claude/skills/gestisci-skills/uso.py --giorni 60
 python3 ~/.claude/skills/diagnosi-mcp/uso_mcp.py
 python3 ~/.claude/skills/diagnosi-sessioni/sessioni.py --mb 30
+python3 ~/.claude/skills/diagnosi-contesto/letture.py --progetto alfa
+python3 ~/.claude/skills/diagnosi-contesto/wiki.py ~/progetti/alfa
 ```
 
-Tutti accettano `--json`.
+Tutti tranne `wiki.py` accettano `--json`.
 
 ## Limiti
 
